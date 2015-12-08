@@ -1,0 +1,86 @@
+user  nginx;
+worker_processes  1;
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+
+  include mime.types;
+  default_type application/octet-stream;
+  sendfile on;
+  keepalive_timeout 65;
+  log_format proxy_log '$remote_addr - $http_x_forwarded_for - $remote_user [$time_local] ' '"$request" $status $body_bytes_sent "$http_referer" ' '"$http_user_agent"' ;
+  server_tokens off;
+
+  server {
+    server_name localhost;
+    listen 80;
+    error_log /dev/stderr;
+    access_log /dev/stdout proxy_log;
+    location / { return 503; }
+    root /dev/null;
+  }
+
+  {{ range $service := services }}{{ if ne .Name "consul" }}
+  upstream {{ $service.Name }} {
+
+    {{ range $tag, $services := service .Name | byTag }}{{ if eq $tag "http" }}{{ range $services }}
+    server {{ .Address }}:{{ .Port }}; {{ end }}{{ end }}{{ else }}   server 127.0.0.1:65535;{{ end }}
+
+    {{ range printf "frontend/%s/upstream" $service.Name | ls }}{{ if ne .Key "stage" }}
+    {{ .Key }} {{ .Value }};{{ end }}{{ end }}
+  }
+  {{ end }}{{ end }}
+
+  {{ range $service := services }}{{ if ne $service.Name "consul" }}
+  server {
+    listen 80;
+    error_log /dev/stderr;
+    access_log /dev/stdout proxy_log;
+    root /dev/null;
+
+    client_max_body_size 0;
+    chunked_transfer_encoding on;
+
+
+    {{ with $server_name := printf "nginx/%s/server_name" $service.Name | key }}{{ if $server_name }}
+    server_name {{ $server_name }}; {{ end }}
+    {{ else }}server_name "{{ $service.Name }}.{{if env "DOMAIN"}}{{env "DOMAIN"}}{{else}}dev{{end}}";{{ end }}
+
+    {{ range printf "nginx/%s" $service.Name | ls }} {{ if ne .Key "listen" }}{{ if ne .Key "server_name" }}
+    {{ .Key }} {{ .Value }};{{ end }}{{ end }}{{ end }}
+
+    location / {
+      proxy_pass http://{{ $service.Name }}/;
+      proxy_set_header X-Real-IP  $remote_addr;
+      proxy_set_header Host $http_host;
+      {{ range printf "nginx/%s/location" $service.Name | ls }}
+      {{ .Key }} {{ .Value }};{{ end }}
+    }
+  }{{ end }}{{ end }}
+
+  upstream consul-ui {
+    server {{if env "CONSUL"}}{{env "CONSUL"}}{{else}}127.0.0.1:8500{{end}};
+  }
+  server {
+    listen 80;
+    error_log /dev/stderr;
+    access_log /dev/stdout proxy_log;
+    server_name "consul-ui.{{if env "DOMAIN"}}{{env "DOMAIN"}}{{else}}dev{{end}}";
+
+    {{ range printf "nginx/consul" | ls }}{{ if ne .Key "listen" }}{{ if ne .Key "server_name" }}
+    {{ .Key }} {{ .Value }};{{ end }}{{ end }}{{ end }}
+    location / {
+      proxy_pass http://consul-ui/;
+      proxy_set_header X-Real-IP  $remote_addr;
+      proxy_set_header Host $http_host;
+      {{ range printf "nginx/consul/location" | ls }}
+      {{ .Key }} {{ .Value }};{{ end }}
+    }
+  }
+
+}
