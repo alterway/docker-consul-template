@@ -1,10 +1,10 @@
-user  nginx;
+user www-data;
 worker_processes  1;
-error_log  /var/log/nginx/error.log warn;
+error_log  /dev/stderr warn;
 pid        /var/run/nginx.pid;
 
 events {
-    worker_connections  1024;
+    worker_connections  {{if env "WORKER_CONNECTIONS"}}{{env "WORKER_CONNECTIONS"}}{{else}}1024{{end}};
 }
 
 http {
@@ -12,9 +12,24 @@ http {
   include mime.types;
   default_type application/octet-stream;
   sendfile on;
-  keepalive_timeout 65;
+  keepalive_timeout {{if env "KEEPALIVE_TIMEOUT"}}{{env "KEEPALIVE_TIMEOUT"}}{{else}}65{{end}};
   log_format proxy_log '$remote_addr - $http_x_forwarded_for - $remote_user [$time_local] ' '"$request" $status $body_bytes_sent "$http_referer" ' '"$http_user_agent"' ;
   server_tokens off;
+
+  {{if env "LDAP_URL"}}
+  ldap_server ldapserver {
+    url {{env "LDAP_URL"}};
+    binddn {{env "LDAP_BINDDN"}};
+    binddn_passwd {{env "LDAP_BINDDN_PASSWD"}};
+    {{if env "LDAP_GROUP"}}
+    group_attribute member;
+    group_attribute_is_dn on;
+    require group '{{env "LDAP_GROUP"}}';
+    {{end}}
+    require valid_user;
+    satisfy all;
+  }
+  {{end}}
 
   server {
     server_name localhost;
@@ -23,6 +38,10 @@ http {
     access_log /dev/stdout proxy_log;
     location / { return 503; }
     root /dev/null;
+
+    listen 443 ssl;
+    ssl_certificate /etc/nginx/ssl/ssl.cert;
+    ssl_certificate_key /etc/nginx/ssl/ssl.key;
   }
 
   {{ range $service := services }}{{ if ne .Name "consul" }}
@@ -31,8 +50,6 @@ http {
     {{ range $tag, $services := service .Name | byTag }}{{ if eq $tag "http" }}{{ range $services }}
     server {{ .Address }}:{{ .Port }}; {{ end }}{{ end }}{{ else }}   server 127.0.0.1:65535;{{ end }}
 
-    {{ range printf "frontend/%s/upstream" $service.Name | ls }}{{ if ne .Key "stage" }}
-    {{ .Key }} {{ .Value }};{{ end }}{{ end }}
   }
   {{ end }}{{ end }}
 
@@ -43,24 +60,31 @@ http {
     access_log /dev/stdout proxy_log;
     root /dev/null;
 
+    listen 443 ssl;
+    ssl_certificate /etc/nginx/ssl/ssl.cert;
+    ssl_certificate_key /etc/nginx/ssl/ssl.key;
+
     client_max_body_size 0;
     chunked_transfer_encoding on;
 
-
-    {{ with $server_name := printf "nginx/%s/server_name" $service.Name | key }}{{ if $server_name }}
-    server_name {{ $server_name }}; {{ end }}
+    {{ with $domains := printf "nginx/%s/domains" $service.Name | key }}{{ if $domains }}
+    server_name {{ $domains }}; {{ end }}
     {{ else }}server_name "{{ $service.Name }}.{{if env "DOMAIN"}}{{env "DOMAIN"}}{{else}}dev{{end}}";{{ end }}
 
-    {{ range printf "nginx/%s" $service.Name | ls }} {{ if ne .Key "listen" }}{{ if ne .Key "server_name" }}
-    {{ .Key }} {{ .Value }};{{ end }}{{ end }}{{ end }}
+    {{ with $server_config := printf "nginx/%s/server_config" $service.Name | key }}
+    {{ $server_config }}
+    {{ end }}
 
     location / {
+      {{if env "LDAP_URL"}}
+      auth_ldap "restricted access";
+      auth_ldap_servers ldapserver;
+      {{end}}
       proxy_pass http://{{ $service.Name }}/;
       proxy_set_header X-Real-IP  $remote_addr;
       proxy_set_header Host $http_host;
-      {{ range printf "nginx/%s/location" $service.Name | ls }}
-      {{ .Key }} {{ .Value }};{{ end }}
     }
+
   }{{ end }}{{ end }}
 
   upstream consul-ui {
@@ -68,19 +92,23 @@ http {
   }
   server {
     listen 80;
+    listen 443 ssl;
+    ssl_certificate /etc/nginx/ssl/ssl.cert;
+    ssl_certificate_key /etc/nginx/ssl/ssl.key;
     error_log /dev/stderr;
     access_log /dev/stdout proxy_log;
     server_name "consul-ui.{{if env "DOMAIN"}}{{env "DOMAIN"}}{{else}}dev{{end}}";
-
-    {{ range printf "nginx/consul" | ls }}{{ if ne .Key "listen" }}{{ if ne .Key "server_name" }}
-    {{ .Key }} {{ .Value }};{{ end }}{{ end }}{{ end }}
+    {{ with $server_config := printf "nginx/consul/server_config" | key }}
+      {{ $server_config }}
+    {{ end }}
     location / {
+      {{if env "LDAP_URL"}}
+      auth_ldap "restricted access";
+      auth_ldap_servers ldapserver;
+      {{end}}
       proxy_pass http://consul-ui/;
       proxy_set_header X-Real-IP  $remote_addr;
       proxy_set_header Host $http_host;
-      {{ range printf "nginx/consul/location" | ls }}
-      {{ .Key }} {{ .Value }};{{ end }}
     }
   }
-
 }
