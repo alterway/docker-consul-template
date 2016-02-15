@@ -80,6 +80,9 @@ http {
       auth_ldap "restricted access";
       auth_ldap_servers ldapserver;
       {{end}}
+      {{ with $server_config_location := printf "nginx/%s/server_config_location" $service.Name | key }}
+      {{ $server_config_location }}
+      {{ end }}
       proxy_pass http://{{ $service.Name }}/;
       proxy_set_header X-Real-IP  $remote_addr;
       proxy_set_header Host $http_host;
