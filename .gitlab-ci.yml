@@ -11,7 +11,9 @@ build:
   stage: build
   script:
     - docker build --pull -t $REGISTRY/consul-template:0.11 0.11/
+    - docker build --pull -t $REGISTRY/consul-template:0.12 0.12/
     - docker push $REGISTRY/consul-template:0.11
+    - docker push $REGISTRY/consul-template:0.12
   only:
     - preprod
     - master
