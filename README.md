@@ -30,7 +30,7 @@ docker run -d --name consul-template \
     -e DOMAIN=example.com \
     -e NGINX_SSL_CERT_PATH=/etc/nginx/ssl/cert.pem \
     -e NGINX_SSL_KEY_PATH=/etc/nginx/ssl/key.pem \
-    alterway/consul-template:0.11 -consul=localhost:8500 -wait=2s -log-level=err -template="/etc/ctmpl/nginx.ctmpl:/etc/nginx/nginx.conf:docker kill -s HUP nginx"
+    alterway/consul-template-nginx:0.11 -consul=localhost:8500 -wait=2s -log-level=err -template="/etc/ctmpl/nginx.ctmpl:/etc/nginx/nginx.conf:docker kill -s HUP nginx"
 ```
 
 ### Tags 0.11-dockerinside-1.10 and 0.11-dockerinside-1.11
@@ -43,7 +43,7 @@ docker run -d --name consul-template \
     -e DOMAIN=example.com \
     -e NGINX_SSL_CERT_PATH=/etc/nginx/ssl/cert.pem \
     -e NGINX_SSL_KEY_PATH=/etc/nginx/ssl/key.pem \
-    alterway/consul-template:0.11 -consul=localhost:8500 -wait=2s -log-level=err -template="/etc/ctmpl/nginx.ctmpl:/etc/nginx/nginx.conf:docker kill -s HUP nginx"
+    alterway/consul-template-nginx:0.11 -consul=localhost:8500 -wait=2s -log-level=err -template="/etc/ctmpl/nginx.ctmpl:/etc/nginx/nginx.conf:docker kill -s HUP nginx"
 ```
 
 ## Docker-compose example
@@ -72,7 +72,7 @@ services:
   consul-template:
     container_name: consul-template
     command: -consul=localhost:8500 -wait=5s -template="/etc/ctmpl/nginx.ctmpl:/etc/nginx/nginx.conf:docker kill -s HUP nginx"
-    image: alterway/consul-template:0.12-dockerinside-1.10
+    image: alterway/consul-template-nginx:0.12-dockerinside-1.10
     network_mode: host
     restart: always
     volumes_from:
