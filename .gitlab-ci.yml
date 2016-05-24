@@ -14,9 +14,15 @@ build:
     - docker build --pull -t $REGISTRY/$NAMESPACE/consul-template:0.11 0.11/ > /dev/null
     - docker build --pull -t $REGISTRY/$NAMESPACE/consul-template:0.12 0.12/  > /dev/null
     - docker build --pull -t $REGISTRY/$NAMESPACE/consul-template:0.11-dockerinside-1.10 0.11-dockerinside-1.10/  > /dev/null
+    - docker build --pull -t $REGISTRY/$NAMESPACE/consul-template:0.11-dockerinside-1.11 0.11-dockerinside-1.11/  > /dev/null
+    - docker build --pull -t $REGISTRY/$NAMESPACE/consul-template:0.12-dockerinside-1.10 0.12-dockerinside-1.10/  > /dev/null
+    - docker build --pull -t $REGISTRY/$NAMESPACE/consul-template:0.12-dockerinside-1.11 0.12-dockerinside-1.11/  > /dev/null
     - docker push $REGISTRY/$NAMESPACE/consul-template:0.11  > /dev/null
     - docker push $REGISTRY/$NAMESPACE/consul-template:0.12  > /dev/null
     - docker push $REGISTRY/$NAMESPACE/consul-template:0.11-dockerinside-1.10  > /dev/null
+    - docker push $REGISTRY/$NAMESPACE/consul-template:0.11-dockerinside-1.11  > /dev/null
+    - docker push $REGISTRY/$NAMESPACE/consul-template:0.12-dockerinside-1.10  > /dev/null
+    - docker push $REGISTRY/$NAMESPACE/consul-template:0.12-dockerinside-1.11  > /dev/null
   only:
     - preprod
     - master
