@@ -93,3 +93,12 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
 ```
+
+## Contributors
+
+- [Nicolas Berthe](https://github.com/4devnull)
+- [Ophélie Mauger](https://github.com/omauger)
+
+## License
+
+View [LICENSE](LICENSE) for the software contained in this image.
