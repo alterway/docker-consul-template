@@ -2,7 +2,7 @@ FROM debian:jessie
 MAINTAINER Nicolas Berthe <nicolas.berthe@alterway.fr>
 
 RUN apt-get update && \
-    apt-get install -y unzip && \
+    apt-get install --no-install-recommends --no-install-suggests -y unzip && \
     rm -r /var/lib/apt/lists/*
 
 ENV CONSUL_TEMPLATE_VERSION 0.11.1
