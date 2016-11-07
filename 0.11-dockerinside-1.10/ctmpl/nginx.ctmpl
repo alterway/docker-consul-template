@@ -100,10 +100,7 @@ http {
       {{end}}
 
       proxy_pass http://consul-ui/;
-      proxy_set_header X-Real-IP  $remote_addr;
-      proxy_set_header Host $http_host;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      include proxy.conf;
       {{if key "nginx/consul/server_config_location" }}
         {{ with $server_config_location := printf "nginx/consul/server_config_location" | key }}
           {{ $server_config_location }}
@@ -171,10 +168,7 @@ http {
         auth_ldap_servers ldapserver;
       {{end}}
       proxy_pass http://{{ $service.Name }}/;
-      proxy_set_header X-Real-IP  $remote_addr;
-      proxy_set_header Host $http_host;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      include proxy.conf;
 
       {{ with $server_config_location := printf "nginx/%s/$server_config_location" $service.Name | key }}
         {{ $server_config_location }}
