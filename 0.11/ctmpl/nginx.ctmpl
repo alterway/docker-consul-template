@@ -93,6 +93,13 @@ http {
       {{ end }}
     {{ end }}
 
+    {{if env "REQUEST_AUTH_LOGIN_PAGE"}}
+    error_page 401 = @login;
+    location @login {
+      rewrite ^.* {{env "REQUEST_AUTH_LOGIN_PAGE"}};
+    }
+    {{end}}
+
     location / {
       {{if env "LDAP_URL"}}
         auth_ldap "restricted access";
@@ -102,13 +109,6 @@ http {
       {{if env "REQUEST_AUTH"}}
         auth_request /auth;
         auth_request_set $user $upstream_http_x_user;
-      {{end}}
-
-      {{if env "REQUEST_AUTH_LOGIN_PAGE"}}
-      error_page 401 = @login;
-      location @login {
-        rewrite ^.* {{env "REQUEST_AUTH_LOGIN_PAGE"}};
-      }
       {{end}}
 
       proxy_pass http://consul-ui/;
