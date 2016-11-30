@@ -99,6 +99,11 @@ http {
         auth_ldap_servers ldapserver;
       {{end}}
 
+      {{if env "REQUEST_AUTH"}}
+        auth_request /auth;
+        auth_request_set $user $upstream_http_x_user;
+      {{end}}
+
       proxy_pass http://consul-ui/;
       include proxy.conf;
       {{if key "nginx/consul/server_config_location" }}
@@ -108,6 +113,21 @@ http {
       {{ end }}
 
     }
+
+    {{if env "REQUEST_AUTH"}}
+    location = /auth {
+      proxy_pass              {{env "REQUEST_AUTH_URL"}};
+      proxy_pass_request_body off;
+      proxy_set_header        Host                    {{env "REQUEST_AUTH_HOST"}};
+      proxy_set_header        Referer                 $http_referer;
+      proxy_set_header        Cookie                  $http_cookie;
+      proxy_set_header        X-Real-IP               $remote_addr;
+      proxy_set_header        X-Forwarded-Host        {{env "REQUEST_AUTH_HOST"}};
+      proxy_set_header        X-Forwarded-Server      $host;
+      proxy_set_header        X-Origin-URI            $request_uri;
+      proxy_set_header        Content-Length          '0';
+    }
+    {{end}}
   }
 
 
