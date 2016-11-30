@@ -94,6 +94,17 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock
 ```
 
+## Environment Variables
+
+- `DOMAIN`                : To set the domain for services (required)
+- `NGINX_SSL_CERT_PATH`   : To set the path to cert if ssl configuration. (optionnal)
+- `NGINX_SSL_KEY_PATH`      : To set the path to key if ssl configuration. (optionnal)
+- `REQUEST_AUTH`            : Set to "1" if you want use auth_request nginx module. (optionnal)
+- `REQUEST_AUTH_URL`        : URL to service for auth_request. (optionnal, required if REQUEST_AUTH)
+- `REQUEST_AUTH_HOST`       : The host who have the auth service to set proxy header. (optionnal, required if REQUEST_AUTH)
+- `REQUEST_AUTH_LOGIN_PAGE` : The URL for login page if REQUEST_AUTH receive 401 http code. (optionnal)
+
+
 ## Contributors
 
 - [Nicolas Berthe](https://github.com/4devnull)

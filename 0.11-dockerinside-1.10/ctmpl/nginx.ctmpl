@@ -104,6 +104,13 @@ http {
         auth_request_set $user $upstream_http_x_user;
       {{end}}
 
+      {{if env "REQUEST_AUTH_LOGIN_PAGE"}}
+      error_page 401 = @login;
+      location @login {
+        rewrite ^.* {{env "REQUEST_AUTH_LOGIN_PAGE"}};
+      }
+      {{end}}
+
       proxy_pass http://consul-ui/;
       include proxy.conf;
       {{if key "nginx/consul/server_config_location" }}
