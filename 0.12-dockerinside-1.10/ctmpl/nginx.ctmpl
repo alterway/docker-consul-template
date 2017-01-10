@@ -190,13 +190,16 @@ http {
     {{ end }}
 
     {{if env "REQUEST_AUTH_SERVICES"}}
+    {{ if ne $service.Name "portail" }}
     error_page 401 = @login;
     location @login {
       rewrite ^.* {{env "REQUEST_AUTH_LOGIN_PAGE"}};
     }
     {{end}}
+    {{end}}
 
     {{if env "REQUEST_AUTH_SERVICES"}}
+    {{ if ne $service.Name "portail" }}
     location = /auth {
       proxy_pass              {{env "REQUEST_AUTH_URL"}};
       proxy_pass_request_body off;
@@ -210,6 +213,7 @@ http {
       proxy_set_header        Content-Length          '0';
     }
     {{end}}
+    {{end}}
 
     location / {
       {{if env "LDAP_URL"}}
@@ -220,8 +224,10 @@ http {
       include proxy.conf;
 
       {{if env "REQUEST_AUTH_SERVICES"}}
+      {{ if ne $service.Name "portail" }}
         auth_request /auth;
         auth_request_set $user $upstream_http_x_user;
+      {{end}}
       {{end}}
 
       {{ with $server_config_location := printf "nginx/%s/$server_config_location" $service.Name | key }}
