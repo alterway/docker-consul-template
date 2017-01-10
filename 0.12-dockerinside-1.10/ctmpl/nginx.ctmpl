@@ -206,7 +206,7 @@ http {
       proxy_set_header        X-Real-IP               $remote_addr;
       proxy_set_header        X-Forwarded-Host        {{env "REQUEST_AUTH_HOST"}};
       proxy_set_header        X-Forwarded-Server      $host;
-      proxy_set_header        X-Origin-URI            $request_uri;
+      proxy_set_header        X-Origin-URI            {{if env "HEADER_ORIGIN_URI"}}{{env "HEADER_ORIGIN_URI"}}{{ else }} $request_uri {{end}};
       proxy_set_header        Content-Length          '0';
     }
     {{end}}
