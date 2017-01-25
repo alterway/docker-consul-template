@@ -143,13 +143,11 @@ http {
   #
 
   {{ range $service := services }}{{ if ne .Name "consul" }}
+    {{ range $tag, $services := service .Name | byTag }}
+      {{ if eq $tag "http" }}{{ range $services }}
   upstream {{ $service.Name }} {
-    {{ range $tag, $services := service .Name | byTag }}{{ if eq $tag "http" }}{{ range $services }}
-    server {{ .Address }}:{{ .Port }}; {{ end }}{{ else }}   server 127.0.0.1:65535;{{ end }}{{ end }}
+    server {{ .Address }}:{{ .Port }};
   }
-  {{ end }}{{ end }}
-
-  {{ range $service := services }}{{ if ne $service.Name "consul" }}
 
   #
   # {{ $service.Name }}
@@ -189,32 +187,6 @@ http {
       {{ $server_config }}
     {{ end }}
 
-    {{if env "REQUEST_AUTH_SERVICES"}}
-    {{ if ne $service.Name "portail" }}
-    error_page 401 = @login;
-    location @login {
-      rewrite ^.* {{env "REQUEST_AUTH_LOGIN_PAGE"}};
-    }
-    {{end}}
-    {{end}}
-
-    {{if env "REQUEST_AUTH_SERVICES"}}
-    {{ if ne $service.Name "portail" }}
-    location = /auth {
-      proxy_pass              {{env "REQUEST_AUTH_URL"}};
-      proxy_pass_request_body off;
-      proxy_set_header        Host                    {{env "REQUEST_AUTH_HOST"}};
-      proxy_set_header        Referer                 $http_referer;
-      proxy_set_header        Cookie                  $http_cookie;
-      proxy_set_header        X-Real-IP               $remote_addr;
-      proxy_set_header        X-Forwarded-Host        {{env "REQUEST_AUTH_HOST"}};
-      proxy_set_header        X-Forwarded-Server      $host;
-      proxy_set_header        X-Origin-URI            {{if env "HEADER_ORIGIN_URI"}}{{env "HEADER_ORIGIN_URI"}}{{ else }} $request_uri {{end}};
-      proxy_set_header        Content-Length          '0';
-    }
-    {{end}}
-    {{end}}
-
     location / {
       {{if env "LDAP_URL"}}
         auth_ldap "restricted access";
@@ -223,19 +195,15 @@ http {
       proxy_pass http://{{ $service.Name }}/;
       include proxy.conf;
 
-      {{if env "REQUEST_AUTH_SERVICES"}}
-      {{ if ne $service.Name "portail" }}
-        auth_request /auth;
-        auth_request_set $user $upstream_http_x_user;
-      {{end}}
-      {{end}}
-
       {{ with $server_config_location := printf "nginx/%s/$server_config_location" $service.Name | key }}
         {{ $server_config_location }}
       {{ end }}
     }
 
   }
+      {{ end }}{{end}}
+    {{ end }}
+
   {{ end }}{{ end }}
 
 }

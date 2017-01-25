@@ -118,6 +118,7 @@ http {
           {{ $server_config_location }}
         {{ end }}
       {{ end }}
+
     }
 
     {{if env "REQUEST_AUTH"}}
@@ -142,13 +143,11 @@ http {
   #
 
   {{ range $service := services }}{{ if ne .Name "consul" }}
+    {{ range $tag, $services := service .Name | byTag }}
+      {{ if eq $tag "http" }}{{ range $services }}
   upstream {{ $service.Name }} {
-    {{ range $tag, $services := service .Name | byTag }}{{ if eq $tag "http" }}{{ range $services }}
-    server {{ .Address }}:{{ .Port }}; {{ end }}{{ else }}   server 127.0.0.1:65535;{{ end }}{{ end }}
+    server {{ .Address }}:{{ .Port }};
   }
-  {{ end }}{{ end }}
-
-  {{ range $service := services }}{{ if ne $service.Name "consul" }}
 
   #
   # {{ $service.Name }}
@@ -202,6 +201,9 @@ http {
     }
 
   }
+      {{ end }}{{end}}
+    {{ end }}
+
   {{ end }}{{ end }}
 
 }
