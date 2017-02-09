@@ -144,9 +144,11 @@ http {
 
   {{ range $service := services }}{{ if ne .Name "consul" }}
     {{ range $tag, $services := service .Name | byTag }}
-      {{ if eq $tag "http" }}{{ range $services }}
+      {{ if eq $tag "http" }}
   upstream {{ $service.Name }} {
+    {{ range $services }}
     server {{ .Address }}:{{ .Port }};
+    {{end}}
   }
 
   #
@@ -201,11 +203,13 @@ http {
     }
 
   }
-      {{ end }}{{end}}
+      {{end}}
 
-  {{ if eq $tag "http-no-auth" }}{{ range $services }}
+  {{ if eq $tag "http-no-auth" }}
   upstream {{ $service.Name }} {
+    {{ range $services }}
     server {{ .Address }}:{{ .Port }};
+    {{ end }}
   }
 
   #
@@ -257,7 +261,7 @@ http {
     }
 
   }
-      {{ end }}{{end}}
+      {{ end }}
     {{ end }}
 
   {{ end }}{{ end }}
