@@ -109,10 +109,8 @@ http {
       {{end}}
 
       proxy_pass http://consul-ui/;
-      proxy_set_header X-Real-IP  $remote_addr;
-      proxy_set_header Host $http_host;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      include proxy.conf;
+
       {{if keyExists "nginx/consul/server_config_location" }}
         {{ $server_config_location := key "nginx/consul/server_config_location" }}
         {{ $server_config_location }}
@@ -173,7 +171,8 @@ http {
     chunked_transfer_encoding on;
 
     {{if printf "nginx/%s/domains" $name | keyExists}}
-        server_name {{ printf "nginx/%s/domains"  $name | key}}
+        {{ with $domains := printf "nginx/%s/domains" $name | key}}
+        server_name {{ $domains }}; {{end}}
     {{ else }}
         server_name "{{ $name }}.{{if env "DOMAIN"}}{{env "DOMAIN"}}{{else}}dev{{end}}";
     {{end}}
@@ -193,22 +192,19 @@ http {
 
     location / {
         proxy_pass http://{{ $name }}/;
+        include proxy.conf;
 
       {{ if $tag | regexMatch "(.*)no-auth"}}
-        include proxy.conf;
+
       {{else}}
         {{if env "LDAP_URL"}}
           auth_ldap "restricted access";
           auth_ldap_servers ldapserver;
         {{end}}
-          proxy_set_header X-Real-IP  $remote_addr;
-          proxy_set_header Host $http_host;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       {{end}}
 
       {{if printf "nginx/%s/server_config_location"  $name | keyExists}}
-      {{ printf "nginx/%s/server_config_location"  $name | key}}
+      {{ printf "nginx/%s/server_config_location" $name | key}}
       {{ end }}
     }
   }
